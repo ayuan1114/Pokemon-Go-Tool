@@ -345,12 +345,18 @@ public class StatLoader {
                                 form = removeQuotes(inputLine, inputLine.indexOf(":"));
                             }
                             else if (inputLine.contains("charged_moves")) {
+                                if (inputLine.contains("]")) {
+                                    continue;
+                                }
                                 boolean elite = inputLine.contains("elite");
                                 while ((inputLine = in.readLine()) != null && !inputLine.contains("]")) {
                                     charMoves.add(new Pokemon.MoveElite(removeQuotes(inputLine, 0), elite));
                                 }
                             }
                             else if (inputLine.contains("fast_moves")) {
+                                if (inputLine.contains("]")) {
+                                    continue;
+                                }
                                 boolean elite = inputLine.contains("elite");
                                 while ((inputLine = in.readLine()) != null && !inputLine.contains("]")) {
                                     fastMoves.add(new Pokemon.MoveElite(removeQuotes(inputLine, 0), elite));

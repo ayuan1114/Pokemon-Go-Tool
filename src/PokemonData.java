@@ -6,6 +6,8 @@ public class PokemonData {
     public static Hashtable<String, Move> moves;
     public static Hashtable<String, Integer> pokemonIDs;
 
+    public static boolean weatherBoost = false;
+
     public static Move getMove(String moveName) {
         return moves.get(moveName);
     }
@@ -23,6 +25,20 @@ public class PokemonData {
         loadAll(test);
         testAttributeCalc("Mewtwo", 15, 15, 15, 40);
         Collections.sort(test.defenses);
+    }
+
+    public static void loadAll(StatLoader test) {
+        possibleShadows = new Hashtable();
+        pokemons = new Hashtable();
+        moves = new Hashtable();
+        pokemonIDs = new Hashtable();
+        test.loadCPMult();
+        test.loadDmgMultipliers();
+        test.loadPokemonIDs(pokemonIDs);
+        test.loadMoves(moves);
+        test.loadPokemon(pokemons);
+        test.loadMegaPokemon(pokemons);
+        test.loadPossibleShadows(possibleShadows);
     }
 
     public static void testCPMultLoad() {
@@ -61,31 +77,18 @@ public class PokemonData {
     }
 
     public static void testAttributeCalc(String pokemon, int attIV, int defIV, int hpIV, double level) {
-        Pokemon attacker1 = pokemons.get("Gengar").createInstance(attIV, defIV, hpIV, level, false);
-        Pokemon attacker2 = pokemons.get("Pheromosa").createInstance(attIV, defIV, hpIV, level, false);
+        Pokemon attacker1 = pokemons.get("Mewtwo").createInstance(attIV, defIV, hpIV, level, false);
+        Pokemon attacker2 = pokemons.get("Gengar").createInstance(attIV, defIV, hpIV, level, false);
         Pokemon defender = pokemons.get("Mewtwo").createInstance(attIV, defIV, hpIV, level, false);
         System.out.println(attacker1);
         System.out.println(attacker2);
-        System.out.println(attacker1.cycleDPS(moves.get("Lick"), moves.get("Shadow Ball"), defender, false));
-        System.out.println(attacker2.cycleDPS(moves.get("Bug Bite"), moves.get("Bug Buzz"), defender, false));
-        System.out.println(attacker1.comprehensiveDPS(moves.get("Lick"), moves.get("Shadow Ball"), defender, false));
-        System.out.println(attacker2.comprehensiveDPS(moves.get("Bug Bite"), moves.get("Bug Buzz"), defender, false));
-        System.out.println(attacker1.effectiveRating(moves.get("Lick"), moves.get("Shadow Ball"), defender, false));
-        System.out.println(attacker2.effectiveRating(moves.get("Bug Bite"), moves.get("Bug Buzz"), defender, false));
-
+        String[] best1 = attacker1.bestMoveset(Type.ICE, false);
+        String[] best2 = attacker2.bestMoveset(Type.GHOST, true);
+        attacker1.movesetSummary(best1[0], best1[1], Type.ICE);
+        attacker1.movesetSummary(best2[0], best2[1], Type.GHOST);
     }
 
-    public static void loadAll(StatLoader test) {
-        possibleShadows = new Hashtable();
-        pokemons = new Hashtable();
-        moves = new Hashtable();
-        pokemonIDs = new Hashtable();
-        test.loadCPMult();
-        test.loadDmgMultipliers();
-        test.loadPokemonIDs(pokemonIDs);
-        test.loadMoves(moves);
-        test.loadPokemon(pokemons);
-        test.loadMegaPokemon(pokemons);
-        test.loadPossibleShadows(possibleShadows);
+    public static void topTypeAttacker(Type type, boolean includeElite, boolean includeMega, boolean includeShadow) {
+
     }
 }

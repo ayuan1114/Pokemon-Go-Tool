@@ -6,7 +6,7 @@ enum Type {
     DRAGON,
     ELECTRIC,
     FAIRY,
-    FIGHTING,
+    FIGHT,
     FIRE,
     FLYING,
     GHOST,
@@ -33,8 +33,9 @@ enum Type {
                 return Type.ELECTRIC;
             case "FAIRY":
                 return Type.FAIRY;
+            case "FIGHT":
             case "FIGHTING":
-                return Type.FIGHTING;
+                return Type.FIGHT;
             case "FIRE":
                 return Type.FIRE;
             case "FLYING":

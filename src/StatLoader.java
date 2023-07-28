@@ -44,10 +44,10 @@ public class StatLoader {
      * @return string array of all pokemon with the pokemon name stored in the location of its id
      */
 
-    public void loadPokemonIDs(Hashtable<String, Integer> pokemonIDs) {
+    public void loadPokemonIDs(Hashtable<Integer, String> pokemonIDs) {
         try {
             System.out.println("Loading all Pokedex IDs...");
-            URL url = new URL("https://pogoapi.net/api/v1/pokemon_names.json");
+            URL url = new URL("https://pogoapi.net/api/v1/released_pokemon.json");
             HttpURLConnection httpConnect = (HttpURLConnection) url.openConnection();
             httpConnect.setRequestMethod("GET");
             httpConnect.setRequestProperty("Content-Type", "application/json");
@@ -82,7 +82,7 @@ public class StatLoader {
                             pokemonName = pokemonName.substring(1, pokemonName.length() - 1);
                         }
                     }
-                    pokemonIDs.put(pokemonName, ID);
+                    pokemonIDs.put(ID, pokemonName);
                 }
 
                 in.close();
@@ -221,7 +221,7 @@ public class StatLoader {
             //return null;
         }
     }
-    public void loadPokemon(Hashtable<String, Pokemon> pokemon) {
+    public void loadPokemonInfo(Hashtable<String, Pokemon> pokemon) {
         try {
 
             // define file URLS
@@ -230,6 +230,8 @@ public class StatLoader {
             URL movesFile = new URL("https://pogoapi.net/api/v1/current_pokemon_moves.json");
 
             System.out.println("Loading each Pokemon's stats...");
+
+            boolean pokemonExists;
 
             // load pokemon stats
             HttpURLConnection httpConnect = (HttpURLConnection) statsFile.openConnection();
@@ -242,6 +244,7 @@ public class StatLoader {
 
                 while ((inputLine = in.readLine()) != null) {
                     Pokemon newPokemon = new Pokemon();
+                    pokemonExists = true;
                     if (inputLine.contains("{")) {
                         while ((inputLine = in.readLine()) != null && !inputLine.contains("}")) {
                             inputLine = inputLine.trim();
@@ -264,10 +267,18 @@ public class StatLoader {
                             else if (attributeName.contains("pokemon_name")) {
                                 newPokemon.name = removeQuotes(attributeValue, 0);
                             }
+                            else if (attributeName.contains("pokemon_id")) {
+                                newPokemon.ID = Integer.parseInt(attributeValue.substring(0, attributeValue.indexOf(",")));
+                                if (!PokemonData.pokemonIDs.containsKey(newPokemon.ID)) {
+                                    pokemonExists = false;
+                                    break;
+                                }
+                            }
                         }
-                        pokemon.put(newPokemon.getNameForm(), newPokemon);
+                        if (pokemonExists) {
+                            pokemon.put(newPokemon.getNameForm(), newPokemon);
+                        }
                     }
-
                 }
 
             }
@@ -309,7 +320,9 @@ public class StatLoader {
                                 }
                             }
                         }
-                        pokemon.get(Pokemon.getNameForm(pokeName, form)).type = type;
+                        if (pokemon.containsKey(Pokemon.getNameForm(pokeName, form))) {
+                            pokemon.get(Pokemon.getNameForm(pokeName, form)).type = type;
+                        }
                     }
                 }
             }
@@ -333,6 +346,7 @@ public class StatLoader {
                     if (inputLine.contains("{")) {
                         String pokeName = "";
                         String form = "";
+                        int ID;
                         List<Pokemon.MoveElite> fastMoves = new ArrayList<Pokemon.MoveElite>();
                         List<Pokemon.MoveElite> charMoves = new ArrayList<Pokemon.MoveElite>();
                         while ((inputLine = in.readLine()) != null && !inputLine.contains("}")) {
@@ -363,8 +377,10 @@ public class StatLoader {
                                 }
                             }
                         }
-                        pokemon.get(Pokemon.getNameForm(pokeName, form)).fastMoves = fastMoves;
-                        pokemon.get(Pokemon.getNameForm(pokeName, form)).charMoves = charMoves;
+                        if (pokemon.containsKey(Pokemon.getNameForm(pokeName, form))) {
+                            pokemon.get(Pokemon.getNameForm(pokeName, form)).fastMoves = fastMoves;
+                            pokemon.get(Pokemon.getNameForm(pokeName, form)).charMoves = charMoves;
+                        }
                     }
                 }
             }
@@ -415,7 +431,7 @@ public class StatLoader {
         }
     }
 
-    public void loadPossibleShadows(Hashtable<String, Boolean> canBeShadow) {
+    public void loadPossibleShadows(Hashtable<String, Pokemon> pokemon) {
         try {
             System.out.println("Loading shadow Pokemon...");
 
@@ -435,7 +451,8 @@ public class StatLoader {
                         while ((inputLine = in.readLine()) != null && !inputLine.contains("}")) {
                             String[] attribute = inputLine.trim().split(":");
                             if (attribute[0].contains("name")) {
-                                canBeShadow.put(removeQuotes(attribute[1], 0), true);
+                                String pokeName = removeQuotes(attribute[1], 0);
+                                pokemon.get(pokeName).canBeShadow = true;
                             }
                         }
                     }

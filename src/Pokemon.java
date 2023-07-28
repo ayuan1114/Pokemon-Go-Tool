@@ -1,8 +1,7 @@
 import java.util.*;
 
 public class Pokemon {
-    public static Pokemon DUMMY = new Pokemon("dummy");
-
+    public static Pokemon DUMMY = new Pokemon("dummy", -1);
 
     public static double[] cpMultipliers;
 
@@ -30,6 +29,7 @@ public class Pokemon {
         }
     }
 
+    public boolean canBeShadow;
     public String name;
     public String form;
     public List<MoveElite> charMoves;
@@ -38,13 +38,14 @@ public class Pokemon {
     public Type type[];
     public int level; // level of -1 indicates raid boss (which has CP Mult 1)
     public boolean isShadow, isMega;
+    public int ID;
 
     /**
      * Constructor with string parameter allows the name of the Pokemon to be set
      * Is also used to define a dummy Pokemon that serves as a typeless Pokemon for calculating general dps
      * @param name
      */
-    public Pokemon(String name) {
+    public Pokemon(String name, int ID) {
         if (name.equals("dummy")) {
             this.name = "DUMMY";
             attack = 181;
@@ -52,9 +53,11 @@ public class Pokemon {
             level = 40;
             type = null;
             form = "";
+            ID = -1;
         }
         else {
             this.name = name;
+            this.ID = ID;
             charMoves = new ArrayList<MoveElite>();
             fastMoves = new ArrayList<MoveElite>();
             stamina = 0;
@@ -77,6 +80,8 @@ public class Pokemon {
         type = new Type[2];
         this.isShadow = false;
         this.isMega = false;
+        canBeShadow = false;
+        ID = 0;
     }
     
     public int calcCP() {
@@ -122,7 +127,7 @@ public class Pokemon {
     }
 
     public Pokemon asRaidBoss(int tier) {
-        Pokemon raid = new Pokemon(name);
+        Pokemon raid = new Pokemon(this.name, this.ID);
         if (tier == 1) {
             raid.stamina = 600;
         }
@@ -149,7 +154,7 @@ public class Pokemon {
     }
 
     public Pokemon createInstance(int attIV, int defIV, int hpIV, double level, boolean isShadow) {
-        Pokemon instance = new Pokemon(this.name);
+        Pokemon instance = new Pokemon(this.name, this.ID);
         instance.level = (int) (level * 2);
         instance.form = this.form;
         instance.charMoves = this.charMoves;
@@ -169,7 +174,6 @@ public class Pokemon {
      * @param otherPokemon the Pokemon being attacked
      * @return the amount of damage one use of the move would do
      */
-
     public double calcMoveDmg(Move move, Pokemon otherPokemon) {
         double modifier = 1;
         double effectAtt = attack;
@@ -203,6 +207,36 @@ public class Pokemon {
     }
 
     /**
+     * Calculates the actual damage output of a move used against another Pokemon
+     * @param move the move to be used
+     * @param atkType typing the move is being analyzed for
+     * @return the amount of damage one use of the move would do
+     */
+    public double calcMoveDmg(Move move, Type atkType) {
+        if (move.elementType != atkType) {
+            return 0;
+        }
+        double modifier = 1;
+        double effectAtt = attack;
+        double enemyEffDef = Pokemon.DUMMY.defense * getCPMult(Pokemon.DUMMY.level);
+        if (isShadow) {
+            effectAtt = effectAtt * 1.2;
+        }
+        effectAtt *= getCPMult(level);
+
+        if (move.elementType == type[0]) {
+            modifier *= 1.2;
+        }
+        else if (type[1] != null && move.elementType == type[1]) {
+            modifier *= 1.2;
+        }
+        if (PokemonData.weatherBoost) {
+            modifier *= 1.2;
+        }
+        return Math.round(0.5 * move.power * (effectAtt / enemyEffDef) * modifier) + 1;
+    }
+
+    /**
      * Calculates simple dps when a pokemon is able to complete a damage cycle
      * (using fast moves until charged move is charged and using charged move can be considered one cycle)
      * (calculation is: (fast move dps * ratio of time fast move is being performed) + (charged move dps * ratio of time charged move is being performed)
@@ -211,11 +245,30 @@ public class Pokemon {
      * @param otherPokemon Pokemon representing the enemy pokemon that is being attacked
      * @return the cycle DPS of this pokemon with the given move set against the enemy pokemon
      */
-
     public double cycleDPS(Move fast, Move charged, Pokemon otherPokemon) {
         double fastDPS = calcMoveDmg(fast, otherPokemon) / fast.duration;
         double fastEPS = fast.energyDelta / fast.duration;
         double charDPS = calcMoveDmg(charged, otherPokemon) / charged.duration;
+        double charEPS = charged.energyDelta / charged.duration;
+        if (charEPS == 0) {
+            return charDPS;
+        }
+        return ((fastDPS * charEPS) + (charDPS * fastEPS)) / (charEPS + fastEPS);
+    }
+
+    /**
+     * Calculates simple dps when a pokemon is able to complete a damage cycle
+     * (using fast moves until charged move is charged and using charged move can be considered one cycle)
+     * (calculation is: (fast move dps * ratio of time fast move is being performed) + (charged move dps * ratio of time charged move is being performed)
+     * @param fast Move representing the fast move to be used for DPS calculation
+     * @param charged Move representing the charged move to be used for DPS calculation
+     * @param atkType typing the moveset is being analyzed for
+     * @return the cycle DPS of this pokemon with the given move set against the enemy pokemon
+     */
+    public double cycleDPS(Move fast, Move charged, Type atkType) {
+        double fastDPS = calcMoveDmg(fast, atkType) / fast.duration;
+        double fastEPS = fast.energyDelta / fast.duration;
+        double charDPS = calcMoveDmg(charged, atkType) / charged.duration;
         double charEPS = charged.energyDelta / charged.duration;
         if (charEPS == 0) {
             return charDPS;
@@ -231,7 +284,6 @@ public class Pokemon {
      * @param otherPokemon Pokemon representing the enemy pokemon that is being attacked
      * @return the comprehensive DPS of this pokemon with the given move set against the enemy pokemon
      */
-
     public double comprehensiveDPS(Move fast, Move charged, Pokemon otherPokemon) {
         double effectDef = defense;
         double enemyEffAtt = otherPokemon.attack;
@@ -258,77 +310,13 @@ public class Pokemon {
     }
 
     /**
-     * calculates the effective rating of a Pokemon that is proportional to DPS * (TOF ^ 0.25)
-     * This measurement will be used to assess a Pokemon's moveset's viability as an attacker
-     * @param fast the fast move of the pokemon
-     * @param charged the charged move os the Pokemon
-     * @param otherPokemon the Pokemon being attacked
-     * @return double that is the effectiveness rating of the moveset against the defender
-     */
-
-    public double effectiveRating(Move fast, Move charged, Pokemon otherPokemon) {
-        double effectDef = defense;
-        double enemyEffAtt = otherPokemon.attack;
-        if (isShadow) {
-            effectDef = effectDef * (5.0 / 6.0);
-        }
-        if (otherPokemon.isShadow) {
-            enemyEffAtt = enemyEffAtt * 1.2;
-        }
-        effectDef *= getCPMult(level);
-        enemyEffAtt *= getCPMult(otherPokemon.level);
-
-        double timeOnField = (stamina * getCPMult(level) * effectDef) / (6 * enemyEffAtt);
-        return comprehensiveDPS(fast, charged, otherPokemon) * Math.pow(timeOnField, 0.25);
-    }
-
-
-
-
-    public double calcMoveDmg(Move move, Type atkType) {
-        if (move.elementType != atkType) {
-            return 0;
-        }
-        double modifier = 1;
-        double effectAtt = attack;
-        double enemyEffDef = Pokemon.DUMMY.defense * getCPMult(Pokemon.DUMMY.level);
-        if (isShadow) {
-            effectAtt = effectAtt * 1.2;
-        }
-        effectAtt *= getCPMult(level);
-
-        if (move.elementType == type[0]) {
-            modifier *= 1.2;
-        }
-        else if (type[1] != null && move.elementType == type[1]) {
-            modifier *= 1.2;
-        }
-        if (PokemonData.weatherBoost) {
-            modifier *= 1.2;
-        }
-        return Math.round(0.5 * move.power * (effectAtt / enemyEffDef) * modifier) + 1;
-    }
-
-    public double cycleDPS(Move fast, Move charged, Type atkType) {
-        double fastDPS = calcMoveDmg(fast, atkType) / fast.duration;
-        double fastEPS = fast.energyDelta / fast.duration;
-        double charDPS = calcMoveDmg(charged, atkType) / charged.duration;
-        double charEPS = charged.energyDelta / charged.duration;
-        if (charEPS == 0) {
-            return charDPS;
-        }
-        return ((fastDPS * charEPS) + (charDPS * fastEPS)) / (charEPS + fastEPS);
-    }
-
-    /**
      * Calculates comprehensive DPS which takes into account the energy remaining when pokemon dies and the dps of the enemy pokemon
      * Reference and further details: https://gamepress.gg/pokemongo/how-calculate-comprehensive-dps
      * @param fast Move representing the fast move to be used for DPS calculation
      * @param charged Move representing the charged move to be used for DPS calculation
-     * @param atkType
+     * @param atkType typing the moveset is being analyzed for
      * @return the comprehensive DPS of this pokemon with the given move set against the enemy pokemon
      */
-
     public double comprehensiveDPS(Move fast, Move charged, Type atkType) {
         double effectDef = defense;
         double enemyEffAtt = Pokemon.DUMMY.attack * getCPMult(Pokemon.DUMMY.level);
@@ -350,6 +338,38 @@ public class Pokemon {
         return simpleDPS + (((charDPS - fastDPS) / (charEPS + fastEPS)) * (0.5 - (expectedEnergyWasted / (stamina * getCPMult(level)))) * expectedEnemyDPS);
     }
 
+    /**
+     * calculates the effective rating of a Pokemon that is proportional to DPS * (TOF ^ 0.25)
+     * This measurement will be used to assess a Pokemon's moveset's viability as an attacker
+     * @param fast the fast move of the pokemon
+     * @param charged the charged move os the Pokemon
+     * @param otherPokemon the Pokemon being attacked
+     * @return double that is the effectiveness rating of the moveset against the defender
+     */
+    public double effectiveRating(Move fast, Move charged, Pokemon otherPokemon) {
+        double effectDef = defense;
+        double enemyEffAtt = otherPokemon.attack;
+        if (isShadow) {
+            effectDef = effectDef * (5.0 / 6.0);
+        }
+        if (otherPokemon.isShadow) {
+            enemyEffAtt = enemyEffAtt * 1.2;
+        }
+        effectDef *= getCPMult(level);
+        enemyEffAtt *= getCPMult(otherPokemon.level);
+
+        double timeOnField = (stamina * getCPMult(level) * effectDef) / (6 * enemyEffAtt);
+        return comprehensiveDPS(fast, charged, otherPokemon) * Math.pow(timeOnField, 0.25);
+    }
+
+    /**
+     * calculates the effective rating of a Pokemon that is proportional to DPS * (TOF ^ 0.25)
+     * This measurement will be used to assess a Pokemon's moveset's viability as an attacker
+     * @param fast the fast move of the pokemon
+     * @param charged the charged move os the Pokemon
+     * @param atkType typing the moveset is being analyzed for
+     * @return double that is the effectiveness rating of the moveset against the defender
+     */
     public double effectiveRating(Move fast, Move charged, Type atkType) {
         double effectDef = defense;
         double enemyEffAtt = Pokemon.DUMMY.attack * getCPMult(Pokemon.DUMMY.level);
@@ -364,47 +384,12 @@ public class Pokemon {
 
     /**
      * returns the best moveset against this Pokemon has against the defending Pokemon
-     * @param atkType the damage typing the moveset is being assessed for
-     * @param includeElite if true, include legacy moves, if false do not
-     * @return a String array that contains the name of the fast and charged move
-     */
-    public String[] bestMoveset(Type atkType, boolean includeElite) {
-        String[] moveset = new String[2];
-        double bestRating = 0;
-        Move fastMove, chargedMove;
-
-        for (MoveElite fast : fastMoves) {
-            if (!fast.isElite || includeElite) {
-                fastMove = PokemonData.getMove(fast.moveName);
-                for (MoveElite charged : charMoves) {
-                    if (!charged.isElite || includeElite) {
-                        chargedMove = PokemonData.getMove(fast.moveName);
-
-                        if (chargedMove.elementType != atkType) {
-                            continue;
-                        }
-
-                        double curRating = effectiveRating(fastMove, chargedMove, atkType);
-                        if (bestRating < curRating) {
-                            bestRating = curRating;
-                            moveset[0] = fast.moveName;
-                            moveset[1] = charged.moveName;
-                        }
-                    }
-                }
-            }
-        }
-        return moveset;
-    }
-
-    /**
-     * returns the best moveset against this Pokemon has against the defending Pokemon
      * @param otherPokemon Pokemon being attacked
      * @param includeElite if true, include legacy moves, if false do not
      * @return a String array that contains the name of the fast and charged move
      */
     public String[] bestMoveset(Pokemon otherPokemon, boolean includeElite) {
-        String[] moveset = new String[2];
+        String[] moveset = new String[3];
         double bestRating = 0;
         Move fastMove, chargedMove;
 
@@ -419,6 +404,7 @@ public class Pokemon {
                             bestRating = curRating;
                             moveset[0] = fast.moveName;
                             moveset[1] = charged.moveName;
+                            moveset[2] = Double.toString(bestRating);
                         }
                     }
                 }
@@ -427,6 +413,48 @@ public class Pokemon {
         return moveset;
     }
 
+    /**
+     * returns the best moveset against this Pokemon has against the defending Pokemon
+     * @param atkType the damage typing the moveset is being assessed for
+     * @param includeElite if true, include legacy moves, if false do not
+     * @return a String array that contains the name of the fast and charged move
+     */
+    public String[] bestMoveset(Type atkType, boolean includeElite) {
+        String[] moveset = new String[3];
+        double bestRating = 0;
+        Move fastMove, chargedMove;
+
+        for (MoveElite fast : fastMoves) {
+            if (!fast.isElite || includeElite) {
+                fastMove = PokemonData.getMove(fast.moveName);
+                for (MoveElite charged : charMoves) {
+                    if (!charged.isElite || includeElite) {
+                        chargedMove = PokemonData.getMove(charged.moveName);
+
+                        if (chargedMove.elementType != atkType) {
+                            continue;
+                        }
+
+                        double curRating = effectiveRating(fastMove, chargedMove, atkType);
+                        if (bestRating < curRating) {
+                            bestRating = curRating;
+                            moveset[0] = fast.moveName;
+                            moveset[1] = charged.moveName;
+                            moveset[2] = Double.toString(bestRating);
+                        }
+                    }
+                }
+            }
+        }
+        return moveset;
+    }
+
+    /**
+     * Prints out details about the given moveset against a certain pokemon
+     * @param fast the name of the fast move
+     * @param charged the name of the charged move
+     * @param otherPokemon the name of the pokemon being attacked
+     */
     public void movesetSummary(String fast, String charged, Pokemon otherPokemon) {
         double movesetER = effectiveRating(PokemonData.getMove(fast), PokemonData.getMove(charged), otherPokemon);
         double movesetDPS = comprehensiveDPS(PokemonData.getMove(fast), PokemonData.getMove(charged), otherPokemon);
@@ -434,6 +462,12 @@ public class Pokemon {
         System.out.println("Fast: " + fast + ", Charged: " + charged + " (ER: " + movesetER + ", DPS: " + movesetDPS + ") against Pokemon: " + otherPokemon.getNameForm());
     }
 
+    /**
+     * Prints out details about the given moveset for a certain type
+     * @param fast the name of the fast move
+     * @param charged the name of the charged move
+     * @param atkType the type the pokemon's moveset is being analyzed for
+     */
     public void movesetSummary(String fast, String charged, Type atkType) {
         double movesetER = effectiveRating(PokemonData.getMove(fast), PokemonData.getMove(charged), atkType);
         double movesetDPS = comprehensiveDPS(PokemonData.getMove(fast), PokemonData.getMove(charged), atkType);

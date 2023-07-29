@@ -1,17 +1,10 @@
 import java.util.*;
 
 public class PokemonRanker {
-    public static boolean includeShadow, includeMega, includeElite;
-    public static Weather weatherBoost;
+    public static boolean includeShadow = true, includeMega = true, includeElite = true;
+    public static Weather weatherBoost = null;
     public static Hashtable<Type, ArrayList<String>> bestByType;
     private static Hashtable<String, Double> pokeER;
-
-    public PokemonRanker() {
-        includeShadow = true;
-        includeMega = true;
-        includeElite = true;
-        weatherBoost = null;
-    }
 
     static class SortByDPS implements Comparator<String> {
         public int compare(String poke1, String poke2) {
@@ -32,29 +25,32 @@ public class PokemonRanker {
             if (PokemonData.pokemons.get(pokemon).canBeShadow) {
                 curPoke = pokemon + " S";
                 try {
-                    curPokeER = new Double(PokemonData.pokemons.get(pokemon).createInstance(15, 15, 15, 40, true).bestMoveset(atkType, includeElite)[2]);
+                    String[] bestMoveset = PokemonData.pokemons.get(pokemon).createInstance(15, 15, 15, 40, true).bestMoveset(atkType, includeElite);
+                    curPokeER = new Double(bestMoveset[2]);
                     allPokemon.add(curPoke);
                     pokeER.put(curPoke, curPokeER);
                 }
                 catch (Exception e) {
-                    System.out.println("dsdsd");
+
                 }
 
             }
             curPoke = pokemon + " N";
             try {
-                curPokeER = new Double(PokemonData.pokemons.get(pokemon).createInstance(15, 15, 15, 40, false).bestMoveset(atkType, includeElite)[2]);
+                String[] bestMoveset = PokemonData.pokemons.get(pokemon).createInstance(15, 15, 15, 40, false).bestMoveset(atkType, includeElite);
+                curPokeER = new Double(bestMoveset[2]);
                 allPokemon.add(pokemon + " N");
                 pokeER.put(curPoke, curPokeER);
             }
             catch (Exception e) {
-                System.out.println("dsdsd");
+
             }
         }
         Collections.sort(allPokemon, new SortByDPS());
         for (String poke : allPokemon) {
             System.out.print(poke + " ");
             System.out.println(pokeER.get(poke));
+
         }
         return allPokemon;
     }

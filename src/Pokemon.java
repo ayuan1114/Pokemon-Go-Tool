@@ -83,7 +83,23 @@ public class Pokemon {
         canBeShadow = false;
         ID = 0;
     }
-    
+
+    public String[] getFastMoves() {
+        String[] toReturn = new String[fastMoves.size()];
+        for (int a = 0; a < fastMoves.size(); a++) {
+            toReturn[a] = fastMoves.get(a).moveName;
+        }
+        return toReturn;
+    }
+
+    public String[] getCharMoves() {
+        String[] toReturn = new String[charMoves.size()];
+        for (int a = 0; a < charMoves.size(); a++) {
+            toReturn[a] = charMoves.get(a).moveName;
+        }
+        return toReturn;
+    }
+
     public int calcCP() {
         return (int) ((attack * Math.sqrt(defense) * Math.sqrt(stamina) * getCPMult(level) * getCPMult(level)) / 10);
     }

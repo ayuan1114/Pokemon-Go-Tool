@@ -23,9 +23,8 @@ public class PokemonData {
     public static void main(String[] args) {
         StatLoader test = new StatLoader();
         loadAll(test);
-        testPokemonLoad(test);
         //testAttributeCalc("Mewtwo", 15, 15, 15, 40);
-        PokemonRanker.bestOfType(Type.PSYCHIC);
+        PokemonRanker.bestOfType(Type.WATER);
     }
 
     public static void loadAll(StatLoader test) {

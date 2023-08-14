@@ -138,7 +138,9 @@ public class Pokemon {
         return this.attack == otherPoke.attack &&
                 this.defense == otherPoke.defense &&
                 this.stamina == otherPoke.stamina &&
-                this.name.equals(otherPoke.name) &&
+                this.ID == otherPoke.ID &&
+                this.type[0] == otherPoke.type[0] &&
+                this.type[1] == otherPoke.type[1] &&
                 this.isShadow == otherPoke.isShadow;
     }
 
@@ -414,7 +416,7 @@ public class Pokemon {
                 fastMove = PokemonData.getMove(fast.moveName);
                 for (MoveElite charged : charMoves) {
                     if (!charged.isElite || includeElite) {
-                        chargedMove = PokemonData.getMove(fast.moveName);
+                        chargedMove = PokemonData.getMove(charged.moveName);
                         double curRating = effectiveRating(fastMove, chargedMove, otherPokemon);
                         if (bestRating < curRating) {
                             bestRating = curRating;

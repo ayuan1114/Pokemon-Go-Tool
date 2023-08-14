@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * contains all the methods needed to obtain and parse information from the PokemonGo API
  */
-public class StatLoader {
+public class PokemonInfoLoader {
     public ArrayList<Integer> defenses = new ArrayList<Integer>();
     private String removeQuotes(String input, int startIndex) {
         int firstIndex = input.indexOf("\"", startIndex);

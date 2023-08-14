@@ -21,13 +21,17 @@ public class PokemonData {
     }
 
     public static void main(String[] args) {
-        StatLoader test = new StatLoader();
+        PokemonInfoLoader test = new PokemonInfoLoader();
         loadAll(test);
         //testAttributeCalc("Mewtwo", 15, 15, 15, 40);
-        PokemonRanker.bestOfType(Type.WATER);
+        //ArrayList<String> bestWater = PokemonRanker.bestOfType(Type.WATER);
+        PokemonRanker.calcBestAttackersByType();
+        Pokemon attacker1 = pokemons.get("Mega Blaziken").createInstance(15, 15, 15, 40, false);
+        Pokemon defender1 = pokemons.get("Kartana").createInstance(15, 15, 15, 40, false);
+        List<String> bestCounters = PokemonRanker.bestCounters(defender1, true, 10);
     }
 
-    public static void loadAll(StatLoader test) {
+    public static void loadAll(PokemonInfoLoader test) {
         pokemons = new Hashtable();
         moves = new Hashtable();
         pokemonIDs = new Hashtable();
@@ -54,14 +58,14 @@ public class PokemonData {
         }
     }
 
-    public static void testPokemonLoad(StatLoader test) {
+    public static void testPokemonLoad(PokemonInfoLoader test) {
         System.out.println("Pokemons:");
         for (String pokemon : pokemons.keySet()) {
             System.out.println(pokemons.get(pokemon));
         }
     }
 
-    public static void testMovesLoad(StatLoader test) {
+    public static void testMovesLoad(PokemonInfoLoader test) {
         System.out.println("Moves: ");
         for (String pokemon : moves.keySet()) {
             System.out.println(moves.get(pokemon));
@@ -69,9 +73,9 @@ public class PokemonData {
     }
 
     public static void testAttributeCalc(String pokemon, int attIV, int defIV, int hpIV, double level) {
-        Pokemon attacker1 = pokemons.get("Mewtwo").createInstance(attIV, defIV, hpIV, level, false);
+        Pokemon attacker1 = pokemons.get("Reshiram").createInstance(attIV, defIV, hpIV, level, false);
         Pokemon attacker2 = pokemons.get("Gengar").createInstance(attIV, defIV, hpIV, level, false);
-        Pokemon defender = pokemons.get("Mewtwo").createInstance(attIV, defIV, hpIV, level, false);
+        Pokemon defender = pokemons.get("Kartana").createInstance(attIV, defIV, hpIV, level, false);
         System.out.println(attacker1);
         System.out.println(attacker2);
         String[] best1 = attacker1.bestMoveset(Type.ICE, false);

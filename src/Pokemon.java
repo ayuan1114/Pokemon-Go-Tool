@@ -112,10 +112,14 @@ public class Pokemon {
     }
 
     public String getNameForm() {
-        if (form.equals("Normal") || form.isEmpty()) {
-            return name;
+        String toReturn = name;
+        if (!form.equals("Normal") && !form.isEmpty()) {
+            toReturn += " (" + form + ")";
         }
-        return name + " (" + form + ")";
+        if (isShadow) {
+            toReturn += " (Shadow)";
+        }
+        return toReturn;
     }
 
     public String toString() {
@@ -212,7 +216,7 @@ public class Pokemon {
         else if (type[1] != null && move.elementType == type[1]) {
             modifier *= 1.2;
         }
-        if (PokemonData.weatherBoost) {
+        if (PokemonData.weather.boosts(move.elementType)) {
             modifier *= 1.2;
         }
         else if (otherPokemon.type != null) {
@@ -234,7 +238,7 @@ public class Pokemon {
         if (move.elementType != atkType) {
             return 0;
         }
-        double modifier = 1;
+        double modifier = 1.0;
         double effectAtt = attack;
         double enemyEffDef = Pokemon.DUMMY.defense * getCPMult(Pokemon.DUMMY.level);
         if (isShadow) {
@@ -248,7 +252,7 @@ public class Pokemon {
         else if (type[1] != null && move.elementType == type[1]) {
             modifier *= 1.2;
         }
-        if (PokemonData.weatherBoost) {
+        if (PokemonData.weather.boosts(move.elementType)) {
             modifier *= 1.2;
         }
         return Math.round(0.5 * move.power * (effectAtt / enemyEffDef) * modifier) + 1;
@@ -403,19 +407,18 @@ public class Pokemon {
     /**
      * returns the best moveset against this Pokemon has against the defending Pokemon
      * @param otherPokemon Pokemon being attacked
-     * @param includeElite if true, include legacy moves, if false do not
      * @return a String array that contains the name of the fast and charged move
      */
-    public String[] bestMoveset(Pokemon otherPokemon, boolean includeElite) {
+    public String[] bestMoveset(Pokemon otherPokemon) {
         String[] moveset = new String[3];
         double bestRating = 0;
         Move fastMove, chargedMove;
 
         for (MoveElite fast : fastMoves) {
-            if (!fast.isElite || includeElite) {
+            if (!fast.isElite || PokemonData.includeElite) {
                 fastMove = PokemonData.getMove(fast.moveName);
                 for (MoveElite charged : charMoves) {
-                    if (!charged.isElite || includeElite) {
+                    if (!charged.isElite || PokemonData.includeElite) {
                         chargedMove = PokemonData.getMove(charged.moveName);
                         double curRating = effectiveRating(fastMove, chargedMove, otherPokemon);
                         if (bestRating < curRating) {
@@ -434,19 +437,18 @@ public class Pokemon {
     /**
      * returns the best moveset against this Pokemon has against the defending Pokemon
      * @param atkType the damage typing the moveset is being assessed for
-     * @param includeElite if true, include legacy moves, if false do not
      * @return a String array that contains the name of the fast and charged move
      */
-    public String[] bestMoveset(Type atkType, boolean includeElite) {
+    public String[] bestMoveset(Type atkType) {
         String[] moveset = new String[3];
         double bestRating = 0;
         Move fastMove, chargedMove;
 
         for (MoveElite fast : fastMoves) {
-            if (!fast.isElite || includeElite) {
+            if (!fast.isElite || PokemonData.includeElite) {
                 fastMove = PokemonData.getMove(fast.moveName);
                 for (MoveElite charged : charMoves) {
-                    if (!charged.isElite || includeElite) {
+                    if (!charged.isElite || PokemonData.includeElite) {
                         chargedMove = PokemonData.getMove(charged.moveName);
 
                         if (chargedMove.elementType != atkType) {

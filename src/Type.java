@@ -6,7 +6,7 @@ enum Type {
     DRAGON,
     ELECTRIC,
     FAIRY,
-    FIGHT,
+    FIGHTING,
     FIRE,
     FLYING,
     GHOST,
@@ -20,7 +20,7 @@ enum Type {
     STEEL,
     WATER;
     Hashtable<Type, Double> multiplier = new Hashtable<Type, Double>();
-    public static Type parseType(String typeString) {
+    public static Type parseType(String typeString) throws IllegalArgumentException {
         typeString = typeString.toUpperCase();
         switch (typeString) {
             case "BUG":
@@ -35,7 +35,7 @@ enum Type {
                 return Type.FAIRY;
             case "FIGHT":
             case "FIGHTING":
-                return Type.FIGHT;
+                return Type.FIGHTING;
             case "FIRE":
                 return Type.FIRE;
             case "FLYING":
@@ -61,7 +61,7 @@ enum Type {
             case "WATER":
                 return Type.WATER;
         }
-        return null;
+        throw new IllegalArgumentException("No type recognized from input");
     }
     public double dmgMult(Type otherType) {
         return multiplier.get(otherType);

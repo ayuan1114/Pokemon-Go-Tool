@@ -8,10 +8,13 @@ public enum Weather {
     RAIN,
     SNOW,
     WINDY,
-    FOG;
+    FOG,
+    NONE;
     public List<Type> getBoostedTypes() {
         List<Type> toReturn = new ArrayList<Type>();
         switch (this) {
+            case NONE:
+                return toReturn;
             case SUNNY:
             case CLEAR:
                 toReturn.add(Type.GRASS);
@@ -29,7 +32,7 @@ public enum Weather {
                 return toReturn;
             case CLOUDY:
                 toReturn.add(Type.FAIRY);
-                toReturn.add(Type.FIGHT);
+                toReturn.add(Type.FIGHTING);
                 toReturn.add(Type.POISON);
                 return toReturn;
             case WINDY:
@@ -50,6 +53,8 @@ public enum Weather {
     }
     public boolean boosts(Type type) {
         switch (this) {
+            case NONE:
+                return false;
             case SUNNY:
             case CLEAR:
                 if (type == Type.GRASS || type == Type.GROUND || type == Type.FIRE) {
@@ -67,7 +72,7 @@ public enum Weather {
                 }
                 return false;
             case CLOUDY:
-                if (type == Type.FAIRY || type == Type.FIGHT || type == Type.POISON) {
+                if (type == Type.FAIRY || type == Type.FIGHTING || type == Type.POISON) {
                     return true;
                 }
                 return false;
@@ -88,5 +93,31 @@ public enum Weather {
                 return false;
         }
         return false;
+    }
+    public static Weather parseWeather(String weather) throws IllegalArgumentException {
+        switch (weather.toUpperCase()) {
+            case "NONE":
+                return NONE;
+            case "SUNNY":
+                return SUNNY;
+            case "CLEAR":
+                return CLEAR;
+            case "RAIN":
+                return RAIN;
+            case "PARTLY":
+            case "PARTLY CLOUDY":
+                return PARTLY_CLOUDY;
+            case "CLOUDY":
+                return CLOUDY;
+            case "WINDY":
+                return WINDY;
+            case "SNOW":
+                return SNOW;
+            case "FOG":
+            case "FOGGY":
+                return FOG;
+            default:
+                throw new IllegalArgumentException("No weather recognized from input");
+        }
     }
 }

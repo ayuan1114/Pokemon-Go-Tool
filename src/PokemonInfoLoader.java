@@ -12,8 +12,18 @@ import java.util.*;
  * contains all the methods needed to obtain and parse information from the PokemonGo API
  */
 public class PokemonInfoLoader {
+    PokemonData database;
+    public static void loadIntoDatabase() {
+        loadCPMult();
+        loadDmgMultipliers();
+        loadPokemonIDs(PokemonData.pokemonIDs);
+        loadMoves(PokemonData.moves);
+        loadPokemonInfo(PokemonData.pokemons);
+        loadMegaPokemon(PokemonData.pokemons);
+        loadPossibleShadows(PokemonData.pokemons);
+    }
     public ArrayList<Integer> defenses = new ArrayList<Integer>();
-    private String removeQuotes(String input, int startIndex) {
+    private static String removeQuotes(String input, int startIndex) {
         int firstIndex = input.indexOf("\"", startIndex);
         return input.substring(firstIndex + 1, input.indexOf("\"", firstIndex + 1));
     }
@@ -22,7 +32,7 @@ public class PokemonInfoLoader {
      * parses the cp_multiplier.json file to obtaian the CP multipliers at each pokemon level in the form of an array
      * @return double array where the cp multiplier at level x is stored in index x/2 of the array
      */
-    public void loadCPMult() {
+    public static void loadCPMult() {
         Pokemon.cpMultipliers = new double[110];
         try {
             System.out.println("Loading CP Multipliers...");
@@ -44,7 +54,7 @@ public class PokemonInfoLoader {
      * @return string array of all pokemon with the pokemon name stored in the location of its id
      */
 
-    public void loadPokemonIDs(Hashtable<Integer, String> pokemonIDs) {
+    public static void loadPokemonIDs(Hashtable<Integer, String> pokemonIDs) {
         try {
             System.out.println("Loading all Pokedex IDs...");
             URL url = new URL("https://pogoapi.net/api/v1/released_pokemon.json");
@@ -101,7 +111,7 @@ public class PokemonInfoLoader {
      * @return
      */
 
-    public void loadMoves(Hashtable<String, Move> moves) {
+    public static void loadMoves(Hashtable<String, Move> moves) {
         try {
             System.out.println("Loading fast moves data...");
 
@@ -221,7 +231,7 @@ public class PokemonInfoLoader {
             //return null;
         }
     }
-    public void loadPokemonInfo(Hashtable<String, Pokemon> pokemon) {
+    public static void loadPokemonInfo(Hashtable<String, Pokemon> pokemon) {
         try {
 
             // define file URLS
@@ -392,7 +402,7 @@ public class PokemonInfoLoader {
             System.out.println("Something went wrong, please try again");
         }
     }
-    public void loadDmgMultipliers() {
+    public static void loadDmgMultipliers() {
         try {
             System.out.println("Loading type effectiveness chart...");
 
@@ -431,7 +441,7 @@ public class PokemonInfoLoader {
         }
     }
 
-    public void loadPossibleShadows(Hashtable<String, Pokemon> pokemon) {
+    public static void loadPossibleShadows(Hashtable<String, Pokemon> pokemon) {
         try {
             System.out.println("Loading shadow Pokemon...");
 
@@ -467,7 +477,7 @@ public class PokemonInfoLoader {
         }
     }
 
-    public void loadMegaPokemon(Hashtable<String, Pokemon> pokemon) {
+    public static void loadMegaPokemon(Hashtable<String, Pokemon> pokemon) {
         try {
             System.out.println("Loading mega Pokemon...");
 

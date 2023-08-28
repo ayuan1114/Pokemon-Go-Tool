@@ -1,18 +1,33 @@
 import java.util.*;
 
 public class PokemonRanker {
-    public static boolean includeShadow = true, includeMega = true, includeElite = true;
-    public static Weather weatherBoost = null;
-    public static Hashtable<Type, ArrayList<String>> bestByType = new Hashtable<>();
-    private static Hashtable<String, Double> pokeER;
+    public boolean includeShadow, includeMega;
+    public Weather weatherBoost;
+    public Hashtable<Type, ArrayList<String>> bestByType;
+    private Hashtable<String, Double> pokeER;
 
-    static class SortByDPS implements Comparator<String> {
+    public PokemonRanker() {
+        includeShadow = true;
+        includeMega = true;
+        weatherBoost = null;
+        bestByType = new Hashtable<>();
+    }
+
+    public void toggleShadow() {
+        includeShadow = !includeShadow;
+    }
+
+    public void toggleMega() {
+        includeMega = !includeMega;
+    }
+
+    private class SortByDPS implements Comparator<String> {
         public int compare(String poke1, String poke2) {
             return pokeER.get(poke2).compareTo(pokeER.get(poke1));
         }
     }
 
-    public static Pokemon getPokemon(String name) {
+    public Pokemon getPokemon(String name) {
         if (name.charAt(name.length() - 1) == 'S') {
             return PokemonData.pokemons.get(name.substring(0, name.length() - 2)).createInstance(15, 15, 15, 40, true);
         }
@@ -22,14 +37,20 @@ public class PokemonRanker {
     }
 
 
-    public static List<String> bestOfType(Type atkType, boolean print, int num) {
+    public List<String> bestOfType(Type atkType, boolean print, int num, boolean reCalc) {
         ArrayList<String> allPokemon;
+        Pokemon newPoke;
         ArrayList<String> toReturn = new ArrayList<String>();
-        if (bestByType.containsKey(atkType)) {
+        if (bestByType.containsKey(atkType) && !reCalc) {
             allPokemon = bestByType.get(atkType);
             for (int a = 0; a < Integer.min(num, allPokemon.size()); a++) {
-                String[] moveset = getPokemon(allPokemon.get(a)).bestMoveset(atkType, includeElite);
-                toReturn.add(allPokemon.get(a) + " (" + moveset[0] + ", " + moveset[1] + ")");
+                newPoke = getPokemon(allPokemon.get(a));
+                if ((newPoke.isMega && !includeMega) || (newPoke.isShadow && !includeShadow)) {
+                    continue;
+                }
+                String[] moveset = newPoke.bestMoveset(atkType);
+
+                toReturn.add(newPoke.getNameForm() + " with moveset: [Fast: " + moveset[0] + ", Charged: " + moveset[1] + "]");
                 if (print) {
                     System.out.print(toReturn.get(a) + " ER: ");
                     System.out.println(moveset[2]);
@@ -42,10 +63,13 @@ public class PokemonRanker {
         for (String pokemon : PokemonData.pokemons.keySet()) {
             String curPoke;
             Double curPokeER;
-            if (PokemonData.pokemons.get(pokemon).canBeShadow) {
+            if (PokemonData.pokemons.get(pokemon).isMega && !includeMega) {
+                continue;
+            }
+            if (PokemonData.pokemons.get(pokemon).canBeShadow && includeShadow) {
                 curPoke = pokemon + " S";
                 try {
-                    String[] bestMoveset = getPokemon(curPoke).bestMoveset(atkType, includeElite);
+                    String[] bestMoveset = getPokemon(curPoke).bestMoveset(atkType);
                     curPokeER = new Double(bestMoveset[2]);
                     allPokemon.add(curPoke);
                     pokeER.put(curPoke, curPokeER);
@@ -57,7 +81,7 @@ public class PokemonRanker {
             }
             curPoke = pokemon + " N";
             try {
-                String[] bestMoveset = getPokemon(curPoke).bestMoveset(atkType, includeElite);
+                String[] bestMoveset = getPokemon(curPoke).bestMoveset(atkType);
                 curPokeER = new Double(bestMoveset[2]);
                 allPokemon.add(pokemon + " N");
                 pokeER.put(curPoke, curPokeER);
@@ -68,8 +92,13 @@ public class PokemonRanker {
         }
         Collections.sort(allPokemon, new SortByDPS());
         for (int a = 0; a < Integer.min(num, allPokemon.size()); a++) {
-            String[] moveset = getPokemon(allPokemon.get(a)).bestMoveset(atkType, includeElite);
-            toReturn.add(allPokemon.get(a) + " (" + moveset[0] + ", " + moveset[1] + ")");
+            newPoke = getPokemon(allPokemon.get(a));
+            if ((newPoke.isMega && !includeMega) || (newPoke.isShadow && !includeShadow)) {
+                continue;
+            }
+            String[] moveset = newPoke.bestMoveset(atkType);
+
+            toReturn.add(newPoke.getNameForm() + " with moveset: [Fast: " + moveset[0] + ", Charged: " + moveset[1] + "]");
             if (print) {
                 System.out.print(toReturn.get(a) + " ER: ");
                 System.out.println(moveset[2]);
@@ -79,13 +108,13 @@ public class PokemonRanker {
         return toReturn;
     }
 
-    public static void calcBestAttackersByType() {
+    public void calc() {
         for (Type type : Type.values()) {
-            bestOfType(type, false, 1000);
+            bestOfType(type, false, 1000, true);
         }
     }
 
-    public static class TypeEff {
+    public class TypeEff {
         public Type type;
         public double dmgMult;
         public TypeEff(Type type, double dmgMult) {
@@ -94,7 +123,7 @@ public class PokemonRanker {
         }
     }
 
-    static class SortTypeCounter implements Comparator<TypeEff> {
+    private class SortTypeCounter implements Comparator<TypeEff> {
         public int compare(TypeEff type1, TypeEff type2) {
             return Double.compare(type2.dmgMult, type1.dmgMult);
         };
@@ -115,14 +144,14 @@ public class PokemonRanker {
      * @return list of the top (num) counters against the given defender
      */
 
-    public static List<String> bestCounters(Pokemon defender, boolean print, int num) {
-        calcBestAttackersByType();
+    public List<String> bestCounters(Pokemon defender, boolean print, int num) {
         List<String> toReturn = new ArrayList<String>();
         int count = 0, tempInc;
         List<TypeEff> typeCounter = new ArrayList<TypeEff>();
         Hashtable<String, String[]> counterDPS = new Hashtable<>();
         Hashtable<Type, Integer> typeInc = new Hashtable<>();
         String curPoke, toAdd;
+        Pokemon pokeToAdd;
         Type curType;
         TypeEff temp;
         double newPokeDPS;
@@ -140,19 +169,23 @@ public class PokemonRanker {
         Collections.sort(typeCounter, new SortTypeCounter());
         for (Type type : Type.values()) {
             curPoke = bestByType.get(type).get(0);
-            counterDPS.put(curPoke, getPokemon(curPoke).bestMoveset(defender, includeElite));
+            counterDPS.put(curPoke, getPokemon(curPoke).bestMoveset(defender));
         }
         while (count < num) {
             curType = typeCounter.get(0).type;
             curTypeInc = typeInc.get(curType);
             curPoke = bestByType.get(curType).get(curTypeInc);
-            toAdd = curPoke + " (" + counterDPS.get(curPoke)[0] + ", " + counterDPS.get(curPoke)[1] + ")";
-            if (!toReturn.contains(toAdd)) {
-                toReturn.add(toAdd);
-                if (print) {
-                    System.out.println(toAdd + " ER: " + counterDPS.get(curPoke)[2]);
+            pokeToAdd = getPokemon(curPoke);
+            toAdd = pokeToAdd.getNameForm() + " with moveset: [Fast: " + counterDPS.get(curPoke)[0] + ", Charged: " + counterDPS.get(curPoke)[1] + "]";
+
+            if (!((pokeToAdd.isMega && !includeMega) || (pokeToAdd.isShadow && !includeShadow))) {
+                if (!toReturn.contains(toAdd)) {
+                    toReturn.add(toAdd);
+                    if (print) {
+                        System.out.println(toAdd + " ER: " + counterDPS.get(curPoke)[2]);
+                    }
+                    count++;
                 }
-                count++;
             }
 
             tempInc = curTypeInc;
@@ -161,7 +194,7 @@ public class PokemonRanker {
             }
             typeInc.replace(curType, tempInc, curTypeInc);
             curPoke = bestByType.get(curType).get(curTypeInc);
-            counterDPS.put(curPoke, getPokemon(curPoke).bestMoveset(defender, includeElite));
+            counterDPS.put(curPoke, getPokemon(curPoke).bestMoveset(defender));
             newPokeDPS = Double.parseDouble(counterDPS.get(curPoke)[2]);
 
             temp = typeCounter.get(0);

@@ -1,12 +1,15 @@
 import java.util.*;
 
 public class PokemonData {
-    public static Hashtable<String, Boolean> possibleShadows;
-    public static Hashtable<String, Pokemon> pokemons;
-    public static Hashtable<String, Move> moves;
-    public static Hashtable<Integer, String> pokemonIDs;
+    public static Hashtable<String, Pokemon> pokemons = new Hashtable();
+    public static Hashtable<String, Move> moves = new Hashtable();
+    public static Hashtable<Integer, String> pokemonIDs = new Hashtable();
+    public static Weather weather = Weather.NONE;
+    public static boolean includeElite = true;
 
-    public static boolean weatherBoost = false;
+    public static void toggleElite() {
+        includeElite = !includeElite;
+    }
 
     public static Move getMove(String moveName) {
         return moves.get(moveName);
@@ -17,9 +20,10 @@ public class PokemonData {
     }
 
     public static boolean canBeShadow(String pokemonName) {
-        return possibleShadows.containsKey(pokemonName);
+        return pokemons.get(pokemonName).canBeShadow;
     }
 
+    /*
     public static void main(String[] args) {
         PokemonInfoLoader test = new PokemonInfoLoader();
         loadAll(test);
@@ -30,27 +34,15 @@ public class PokemonData {
         Pokemon defender1 = pokemons.get("Kartana").createInstance(15, 15, 15, 40, false);
         List<String> bestCounters = PokemonRanker.bestCounters(defender1, true, 10);
     }
+    */
 
-    public static void loadAll(PokemonInfoLoader test) {
-        pokemons = new Hashtable();
-        moves = new Hashtable();
-        pokemonIDs = new Hashtable();
-        test.loadCPMult();
-        test.loadDmgMultipliers();
-        test.loadPokemonIDs(pokemonIDs);
-        test.loadMoves(moves);
-        test.loadPokemonInfo(pokemons);
-        test.loadMegaPokemon(pokemons);
-        test.loadPossibleShadows(pokemons);
-    }
-
-    public static void testCPMultLoad() {
+    public void testCPMultLoad() {
         for (double mult: Pokemon.cpMultipliers) {
             System.out.println(mult);
         }
     }
 
-    public static void testEffectivenessChart() {
+    public void testEffectivenessChart() {
         for (Type type : Type.values()) {
             for (Type type2 : Type.values()) {
                 System.out.println(type.toString() + " " + type2.toString() + ": " + type.dmgMult(type2));
@@ -58,34 +50,30 @@ public class PokemonData {
         }
     }
 
-    public static void testPokemonLoad(PokemonInfoLoader test) {
+    public void testPokemonLoad(PokemonInfoLoader test) {
         System.out.println("Pokemons:");
         for (String pokemon : pokemons.keySet()) {
             System.out.println(pokemons.get(pokemon));
         }
     }
 
-    public static void testMovesLoad(PokemonInfoLoader test) {
+    public void testMovesLoad(PokemonInfoLoader test) {
         System.out.println("Moves: ");
         for (String pokemon : moves.keySet()) {
             System.out.println(moves.get(pokemon));
         }
     }
 
-    public static void testAttributeCalc(String pokemon, int attIV, int defIV, int hpIV, double level) {
+    public void testAttributeCalc(String pokemon, int attIV, int defIV, int hpIV, double level) {
         Pokemon attacker1 = pokemons.get("Reshiram").createInstance(attIV, defIV, hpIV, level, false);
         Pokemon attacker2 = pokemons.get("Gengar").createInstance(attIV, defIV, hpIV, level, false);
         Pokemon defender = pokemons.get("Kartana").createInstance(attIV, defIV, hpIV, level, false);
         System.out.println(attacker1);
         System.out.println(attacker2);
-        String[] best1 = attacker1.bestMoveset(Type.ICE, false);
-        String[] best2 = attacker2.bestMoveset(Type.GHOST, true);
+        String[] best1 = attacker1.bestMoveset(Type.ICE);
+        String[] best2 = attacker2.bestMoveset(Type.GHOST);
         System.out.println(best1[0] + " " + best1[1]);
         attacker1.movesetSummary(best1[0], best1[1], Type.ICE);
         attacker2.movesetSummary(best2[0], best2[1], Type.GHOST);
-    }
-
-    public static void topTypeAttacker(Type type, boolean includeElite, boolean includeMega, boolean includeShadow) {
-
     }
 }
